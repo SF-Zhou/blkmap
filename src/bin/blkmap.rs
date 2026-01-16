@@ -31,7 +31,8 @@ fn main() -> ExitCode {
         args.path.fiemap_range(args.offset, length)
     } else if args.offset > 0 {
         // If offset is specified but length is not, query from offset to end
-        args.path.fiemap_range(args.offset, u64::MAX - args.offset)
+        args.path
+            .fiemap_range(args.offset, u64::MAX.saturating_sub(args.offset))
     } else {
         args.path.fiemap()
     };

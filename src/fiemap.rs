@@ -22,14 +22,14 @@ pub fn query_fiemap<F: AsRawFd>(file: &F, start: u64, length: u64) -> Result<Vec
     let mut extents = Vec::new();
     let mut current_start = start;
 
-    // Handle potential overflow
-    let end = start.checked_add(length).ok_or(Error::InvalidRange {
+    // Handle potential overflow - range_end is exclusive
+    let range_end = start.checked_add(length).ok_or(Error::InvalidRange {
         offset: start,
         length,
     })?;
 
     loop {
-        let remaining_length = end.saturating_sub(current_start);
+        let remaining_length = range_end.saturating_sub(current_start);
         if remaining_length == 0 {
             break;
         }
@@ -73,7 +73,7 @@ pub fn query_fiemap<F: AsRawFd>(file: &F, start: u64, length: u64) -> Result<Vec
             current_start = raw.fe_logical.saturating_add(raw.fe_length);
         }
 
-        if is_last || current_start >= end {
+        if is_last || current_start >= range_end {
             break;
         }
     }
