@@ -73,9 +73,6 @@ use std::path::Path;
 // Using a Path
 let extents = Path::new("/path/to/file").fiemap()?;
 
-// Using a &str
-let extents = "/path/to/file".fiemap()?;
-
 // Using a PathBuf
 let path = std::path::PathBuf::from("/path/to/file");
 let extents = path.fiemap()?;
@@ -153,23 +150,6 @@ This crate only works on Linux systems. It has been tested on:
 
 - x86_64 (Intel/AMD)
 - aarch64 (ARM64)
-
-## Error Handling
-
-The crate provides detailed error types:
-
-```rust
-use blkmap::{Fiemap, Error};
-
-match "/path/to/file".fiemap() {
-    Ok(extents) => println!("Found {} extents", extents.len()),
-    Err(Error::NotSupported) => eprintln!("FIEMAP not supported on this filesystem"),
-    Err(Error::Io(e)) => eprintln!("I/O error: {}", e),
-    Err(Error::InvalidRange { offset, length }) => {
-        eprintln!("Invalid range: offset={}, length={}", offset, length);
-    }
-}
-```
 
 ## License
 

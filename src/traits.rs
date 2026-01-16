@@ -100,26 +100,6 @@ impl Fiemap for PathBuf {
     }
 }
 
-impl Fiemap for str {
-    fn fiemap(&self) -> Result<Vec<FiemapExtent>> {
-        Path::new(self).fiemap()
-    }
-
-    fn fiemap_range(&self, offset: u64, length: u64) -> Result<Vec<FiemapExtent>> {
-        Path::new(self).fiemap_range(offset, length)
-    }
-}
-
-impl Fiemap for String {
-    fn fiemap(&self) -> Result<Vec<FiemapExtent>> {
-        self.as_str().fiemap()
-    }
-
-    fn fiemap_range(&self, offset: u64, length: u64) -> Result<Vec<FiemapExtent>> {
-        self.as_str().fiemap_range(offset, length)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -176,44 +156,6 @@ mod tests {
             Ok(_) => {}
             Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
-        }
-    }
-
-    #[test]
-    fn test_str_fiemap() {
-        let temp = NamedTempFile::new().unwrap();
-        let path_str = temp.path().to_str().unwrap();
-
-        let result = path_str.fiemap();
-        match result {
-            Ok(_) => {}
-            Err(e) if e.kind() == ErrorKind::Unsupported => {}
-            Err(e) => panic!("Unexpected error: {:?}", e),
-        }
-    }
-
-    #[test]
-    fn test_string_fiemap() {
-        let temp = NamedTempFile::new().unwrap();
-        let path_string = temp.path().to_str().unwrap().to_string();
-
-        let result = path_string.fiemap();
-        match result {
-            Ok(_) => {}
-            Err(e) if e.kind() == ErrorKind::Unsupported => {}
-            Err(e) => panic!("Unexpected error: {:?}", e),
-        }
-    }
-
-    #[test]
-    fn test_nonexistent_path() {
-        let path = "/nonexistent/path/to/file";
-        let result = path.fiemap();
-        match result {
-            Err(e) => {
-                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
-            }
-            _ => panic!("Expected NotFound error"),
         }
     }
 }
