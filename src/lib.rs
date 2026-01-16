@@ -34,6 +34,6 @@ mod fiemap;
 mod ioctl;
 mod traits;
 
-pub use error::{Error, Result};
+pub use error::Result;
 pub use extent::{ExtentFlags, FiemapExtent};
 pub use traits::Fiemap;

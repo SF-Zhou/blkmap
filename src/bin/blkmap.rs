@@ -2,8 +2,9 @@
 //!
 //! Usage: blkmap PATH [--offset OFFSET] [--length LENGTH]
 
-use blkmap::{Error, Fiemap};
+use blkmap::Fiemap;
 use clap::Parser;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -60,19 +61,16 @@ fn main() -> ExitCode {
             }
             ExitCode::SUCCESS
         }
-        Err(Error::NotSupported) => {
+        Err(e) if e.kind() == ErrorKind::Unsupported => {
             eprintln!("Error: FIEMAP is not supported on this filesystem");
             ExitCode::from(2)
         }
-        Err(Error::Io(e)) => {
+        Err(e) if e.kind() == ErrorKind::InvalidInput => {
             eprintln!("Error: {}", e);
             ExitCode::FAILURE
         }
-        Err(Error::InvalidRange { offset, length }) => {
-            eprintln!(
-                "Error: Invalid range (offset={}, length={})",
-                offset, length
-            );
+        Err(e) => {
+            eprintln!("Error: {}", e);
             ExitCode::FAILURE
         }
     }

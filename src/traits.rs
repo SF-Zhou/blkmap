@@ -123,8 +123,7 @@ impl Fiemap for String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Error;
-    use std::io::Write;
+    use std::io::{ErrorKind, Write};
     use std::path::PathBuf;
     use tempfile::NamedTempFile;
 
@@ -133,7 +132,8 @@ mod tests {
         let temp = NamedTempFile::new().unwrap();
         let result = temp.as_file().fiemap();
         match result {
-            Ok(_) | Err(Error::NotSupported) => {}
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -147,7 +147,8 @@ mod tests {
 
         let result = temp.as_file().fiemap_range(0, 2048);
         match result {
-            Ok(_) | Err(Error::NotSupported) => {}
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -159,7 +160,8 @@ mod tests {
 
         let result = path.fiemap();
         match result {
-            Ok(_) | Err(Error::NotSupported) => {}
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -171,7 +173,8 @@ mod tests {
 
         let result = path.fiemap();
         match result {
-            Ok(_) | Err(Error::NotSupported) => {}
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -183,7 +186,8 @@ mod tests {
 
         let result = path_str.fiemap();
         match result {
-            Ok(_) | Err(Error::NotSupported) => {}
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -195,7 +199,8 @@ mod tests {
 
         let result = path_string.fiemap();
         match result {
-            Ok(_) | Err(Error::NotSupported) => {}
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::Unsupported => {}
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -205,7 +210,7 @@ mod tests {
         let path = "/nonexistent/path/to/file";
         let result = path.fiemap();
         match result {
-            Err(Error::Io(e)) => {
+            Err(e) => {
                 assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
             }
             _ => panic!("Expected NotFound error"),

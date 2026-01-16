@@ -1,27 +1,24 @@
 //! Error types for the blkmap crate.
 
-use thiserror::Error;
+use std::io::{Error, ErrorKind};
 
 /// Result type for blkmap operations.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::io::Result<T>;
 
-/// Errors that can occur when querying file extent maps.
-#[derive(Error, Debug)]
-pub enum Error {
-    /// I/O error from the underlying system call.
-    #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+/// Creates an error indicating that FIEMAP is not supported on this filesystem.
+#[inline]
+pub fn not_supported() -> Error {
+    Error::new(
+        ErrorKind::Unsupported,
+        "FIEMAP not supported on this filesystem",
+    )
+}
 
-    /// The file system does not support FIEMAP.
-    #[error("FIEMAP not supported on this file system")]
-    NotSupported,
-
-    /// Invalid range specified (e.g., start + length overflows).
-    #[error("Invalid range: offset={offset}, length={length}")]
-    InvalidRange {
-        /// The starting offset of the range.
-        offset: u64,
-        /// The length of the range.
-        length: u64,
-    },
+/// Creates an error for an invalid range (e.g., offset + length overflows).
+#[inline]
+pub fn invalid_range(offset: u64, length: u64) -> Error {
+    Error::new(
+        ErrorKind::InvalidInput,
+        format!("Invalid range: offset={}, length={}", offset, length),
+    )
 }

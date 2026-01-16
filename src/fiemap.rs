@@ -1,6 +1,6 @@
 //! FIEMAP query implementation.
 
-use crate::error::{Error, Result};
+use crate::error::{invalid_range, not_supported, Result};
 use crate::extent::FiemapExtent;
 use crate::ioctl::{FiemapRaw, FS_IOC_FIEMAP};
 
@@ -23,10 +23,9 @@ pub fn query_fiemap<F: AsRawFd>(file: &F, start: u64, length: u64) -> Result<Vec
     let mut current_start = start;
 
     // Handle potential overflow - range_end is exclusive
-    let range_end = start.checked_add(length).ok_or(Error::InvalidRange {
-        offset: start,
-        length,
-    })?;
+    let range_end = start
+        .checked_add(length)
+        .ok_or_else(|| invalid_range(start, length))?;
 
     loop {
         let remaining_length = range_end.saturating_sub(current_start);
@@ -47,9 +46,9 @@ pub fn query_fiemap<F: AsRawFd>(file: &F, start: u64, length: u64) -> Result<Vec
             if err.raw_os_error() == Some(libc::EOPNOTSUPP)
                 || err.raw_os_error() == Some(libc::ENOTTY)
             {
-                return Err(Error::NotSupported);
+                return Err(not_supported());
             }
-            return Err(Error::Io(err));
+            return Err(err);
         }
 
         let mapped = fiemap.fm_mapped_extents as usize;
@@ -93,7 +92,7 @@ pub fn query_fiemap_full<F: AsRawFd>(file: &F) -> Result<Vec<FiemapExtent>> {
 mod tests {
     use super::*;
     use std::fs::File;
-    use std::io::Write;
+    use std::io::{ErrorKind, Write};
     use tempfile::NamedTempFile;
 
     #[test]
@@ -107,7 +106,7 @@ mod tests {
                 // Empty file should have no extents
                 assert!(extents.is_empty());
             }
-            Err(Error::NotSupported) => {
+            Err(e) if e.kind() == ErrorKind::Unsupported => {
                 // Some filesystems don't support FIEMAP
             }
             Err(e) => panic!("Unexpected error: {:?}", e),
@@ -134,7 +133,7 @@ mod tests {
                     assert!(extent.length > 0);
                 }
             }
-            Err(Error::NotSupported) => {
+            Err(e) if e.kind() == ErrorKind::Unsupported => {
                 // Some filesystems don't support FIEMAP (e.g., tmpfs)
             }
             Err(e) => panic!("Unexpected error: {:?}", e),
@@ -155,7 +154,7 @@ mod tests {
             Ok(_extents) => {
                 // Range query succeeded
             }
-            Err(Error::NotSupported) => {
+            Err(e) if e.kind() == ErrorKind::Unsupported => {
                 // Some filesystems don't support FIEMAP
             }
             Err(e) => panic!("Unexpected error: {:?}", e),
@@ -168,11 +167,10 @@ mod tests {
         // This should cause overflow
         let result = query_fiemap(temp.as_file(), u64::MAX, u64::MAX);
         match result {
-            Err(Error::InvalidRange { offset, length }) => {
-                assert_eq!(offset, u64::MAX);
-                assert_eq!(length, u64::MAX);
+            Err(e) if e.kind() == ErrorKind::InvalidInput => {
+                // Expected error
             }
-            _ => panic!("Expected InvalidRange error"),
+            _ => panic!("Expected InvalidInput error"),
         }
     }
 
